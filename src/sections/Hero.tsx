@@ -81,14 +81,32 @@ export default function Hero() {
 
           /* ---------------- Scroll choreography (pinned + scrubbed) ---------------- */
           gsap.set(b, { xPercent: -50, yPercent: -50, x: 0, y: 0, '--fx': 1 });
+          // Pin the mark's vertical anchor in px. Mobile toolbars change the viewport
+          // height mid-scroll without a ScrollTrigger refresh, so a %/vh anchor would
+          // move while the dock target stays put, dropping the logo below the header.
+          // Only a width change (rotation) re-anchors; ScrollTrigger refreshes then too.
+          let anchorW = window.innerWidth;
+          gsap.set(b, { top: window.innerHeight / 2 });
+          const onResize = () => {
+            if (window.innerWidth === anchorW) return;
+            anchorW = window.innerWidth;
+            gsap.set(b, { top: window.innerHeight / 2 });
+          };
+          window.addEventListener('resize', onResize);
           const target = () => {
             const r = slot().getBoundingClientRect();
             // The header slides in from y: -24, so measure its resting position
             // (remove its current translate), otherwise the logo docks too high.
             const headerY = header ? Number(gsap.getProperty(header, 'y')) || 0 : 0;
+            // Measure from the mark's own resolved anchor (top: 50svh), not innerHeight:
+            // ScrollTrigger skips refreshes when a mobile toolbar shows/hides, so
+            // innerHeight-based targets go stale and the docked logo lands too low.
+            const cs = getComputedStyle(b);
+            const cx = parseFloat(cs.left) || window.innerWidth / 2;
+            const cy = parseFloat(cs.top) || window.innerHeight / 2;
             return {
-              x: r.left + r.width / 2 - window.innerWidth / 2,
-              y: r.top - headerY + r.height / 2 - window.innerHeight / 2,
+              x: r.left + r.width / 2 - cx,
+              y: r.top - headerY + r.height / 2 - cy,
               scale: r.width / b.offsetWidth,
             };
           };
@@ -206,8 +224,13 @@ export default function Hero() {
               b.style.setProperty('--sheen-x', `${50 + nx * 60}%`);
             };
             window.addEventListener('pointermove', onMove, { passive: true });
-            return () => window.removeEventListener('pointermove', onMove);
+            return () => {
+              window.removeEventListener('pointermove', onMove);
+              window.removeEventListener('resize', onResize);
+            };
           }
+
+          return () => window.removeEventListener('resize', onResize);
         },
       );
     });
