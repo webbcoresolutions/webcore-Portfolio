@@ -14,7 +14,7 @@ function siteUrl(url: string): Plugin {
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   return {
-    plugins: [react(), siteUrl(env.VITE_SITE_URL || '')],
+    plugins: [react(), siteUrl(env.VITE_SITE_URL || 'https://webcore-portfolio-five.vercel.app')],
     // The build-time pre-renderer bundles everything so it runs in plain Node.
     ssr: { noExternal: true },
     build: {
